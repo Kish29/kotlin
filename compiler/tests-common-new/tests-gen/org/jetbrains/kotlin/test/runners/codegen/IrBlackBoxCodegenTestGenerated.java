@@ -19362,6 +19362,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             }
 
             @Test
+            @TestMetadata("mangledSamWrappers.kt")
+            public void testMangledSamWrappers() throws Exception {
+                runTest("compiler/testData/codegen/box/inlineClasses/funInterface/mangledSamWrappers.kt");
+            }
+
+            @Test
             @TestMetadata("returnIC.kt")
             public void testReturnIC() throws Exception {
                 runTest("compiler/testData/codegen/box/inlineClasses/funInterface/returnIC.kt");
