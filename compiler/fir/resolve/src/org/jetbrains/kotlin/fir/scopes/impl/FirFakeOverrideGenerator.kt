@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.fir.scopes.impl
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.copy
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.synthetic.FirSyntheticProperty
@@ -18,15 +19,14 @@ import org.jetbrains.kotlin.fir.resolve.substitution.ConeSubstitutor
 import org.jetbrains.kotlin.fir.resolve.substitution.substitutorByMap
 import org.jetbrains.kotlin.fir.scopes.FakeOverrideSubstitution
 import org.jetbrains.kotlin.fir.scopes.fakeOverrideSubstitution
-import org.jetbrains.kotlin.name.CallableId
-import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.builder.buildImplicitTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
-import org.jetbrains.kotlin.fir.copy
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.utils.addToStdlib.runIf
 
 object FirFakeOverrideGenerator {
@@ -466,31 +466,28 @@ object FirFakeOverrideGenerator {
     ): Pair<List<FirTypeParameterRef>, ConeSubstitutor> {
         if (member.typeParameters.isEmpty()) return Pair(member.typeParameters, substitutor)
         val newTypeParameters = member.typeParameters.map { typeParameter ->
-            if (typeParameter !is FirTypeParameter) return@map null
+            val typeParameterToUse = typeParameter.symbol.fir
             FirTypeParameterBuilder().apply {
-                source = typeParameter.source
-                declarationSiteSession = typeParameter.declarationSiteSession
+                source = typeParameterToUse.source
+                declarationSiteSession = typeParameterToUse.declarationSiteSession
                 origin = FirDeclarationOrigin.SubstitutionOverride
-                name = typeParameter.name
+                name = typeParameterToUse.name
                 symbol = FirTypeParameterSymbol()
-                variance = typeParameter.variance
-                isReified = typeParameter.isReified
-                annotations += typeParameter.annotations
+                variance = typeParameterToUse.variance
+                isReified = typeParameterToUse.isReified
+                annotations += typeParameterToUse.annotations
             }
         }
 
-        val substitutionMapForNewParameters = member.typeParameters.zip(newTypeParameters).mapNotNull { (original, new) ->
-            if (new != null)
-                Pair(original.symbol, ConeTypeParameterTypeImpl(new.symbol.toLookupTag(), isNullable = false))
-            else null
-        }.toMap()
+        val substitutionMapForNewParameters = member.typeParameters.zip(newTypeParameters).associate { (original, new) ->
+            Pair(original.symbol, ConeTypeParameterTypeImpl(new.symbol.toLookupTag(), isNullable = false))
+        }
 
         val additionalSubstitutor = substitutorByMap(substitutionMapForNewParameters, useSiteSession)
 
         var wereChangesInTypeParameters = forceTypeParametersRecreation
         for ((newTypeParameter, oldTypeParameter) in newTypeParameters.zip(member.typeParameters)) {
-            if (newTypeParameter == null) continue
-            val original = oldTypeParameter as FirTypeParameter
+            val original = oldTypeParameter.symbol.fir
             for (boundTypeRef in original.bounds) {
                 val typeForBound = boundTypeRef.coneType
                 val substitutedBound = substitutor.substituteOrNull(typeForBound)
@@ -507,7 +504,7 @@ object FirFakeOverrideGenerator {
 
         if (!wereChangesInTypeParameters) return Pair(member.typeParameters, substitutor)
         return Pair(
-            newTypeParameters.mapIndexed { index, builder -> builder?.build() ?: member.typeParameters[index] },
+            newTypeParameters.map(FirTypeParameterBuilder::build),
             ChainedSubstitutor(substitutor, additionalSubstitutor)
         )
     }
