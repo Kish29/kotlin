@@ -72,6 +72,11 @@ sealed class KtFirDiagnostic<PSI: PsiElement> : KtDiagnosticWithPsi<PSI> {
         abstract val unsupportedFeature: Pair<LanguageFeature, LanguageVersionSettings>
     }
 
+    abstract class NewInferenceError : KtFirDiagnostic<PsiElement>() {
+        override val diagnosticClass get() = NewInferenceError::class
+        abstract val error: String
+    }
+
     abstract class Syntax : KtFirDiagnostic<PsiElement>() {
         override val diagnosticClass get() = Syntax::class
     }
