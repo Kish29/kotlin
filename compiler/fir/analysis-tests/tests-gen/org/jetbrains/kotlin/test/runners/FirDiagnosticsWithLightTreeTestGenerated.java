@@ -2734,6 +2734,12 @@ public class FirDiagnosticsWithLightTreeTestGenerated extends AbstractFirDiagnos
             }
 
             @Test
+            @TestMetadata("elvisAndUnit.kt")
+            public void testElvisAndUnit() throws Exception {
+                runTest("compiler/fir/analysis-tests/testData/resolve/inference/elvisAndUnit.kt");
+            }
+
+            @Test
             @TestMetadata("extensionCallableReferences.kt")
             public void testExtensionCallableReferences() throws Exception {
                 runTest("compiler/fir/analysis-tests/testData/resolve/inference/extensionCallableReferences.kt");
