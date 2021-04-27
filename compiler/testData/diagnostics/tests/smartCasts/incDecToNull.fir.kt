@@ -4,7 +4,7 @@ class IncDec {
 
 fun foo(): IncDec {
     var x = IncDec()
-    x = x++
-    x++
+    x = <!TYPE_MISMATCH!>x++<!>
+    <!TYPE_MISMATCH!>x++<!>
     return x
 }

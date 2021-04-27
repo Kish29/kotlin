@@ -22,10 +22,10 @@ class WrongIncDec() {
 
 fun testWrongIncDec() {
   var x = WrongIncDec()
-  x++
-  ++x
-  x--
-  --x
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Int but WrongIncDec was expected">x++</error>
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Int but WrongIncDec was expected">++x</error>
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Int but WrongIncDec was expected">x--</error>
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Int but WrongIncDec was expected">--x</error>
 }
 
 class UnitIncDec() {
@@ -35,12 +35,12 @@ class UnitIncDec() {
 
 fun testUnitIncDec() {
   var x = UnitIncDec()
-  x++
-  ++x
-  x--
-  --x
-  x = x++
-  x = x--
-  x = ++x
-  x = --x
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">x++</error>
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">++x</error>
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">x--</error>
+  <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">--x</error>
+  x = <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">x++</error>
+  x = <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">x--</error>
+  x = <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">++x</error>
+  x = <error descr="[TYPE_MISMATCH] Type mismatch: inferred type is kotlin/Unit but UnitIncDec was expected">--x</error>
 }

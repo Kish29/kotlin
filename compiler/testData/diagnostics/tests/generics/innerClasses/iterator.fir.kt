@@ -29,7 +29,7 @@ fun <E> commonSupertype(x: E, y: E): E = x
 
 fun foo() {
     var myIt = A<String>().iterator()
-    myIt = A<Int>().iterator()
+    myIt = <!TYPE_MISMATCH!>A<Int>().iterator()<!>
 
     val csIt: Iterator<CharSequence> = A<String>().iterator()
 
