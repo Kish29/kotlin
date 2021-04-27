@@ -8,7 +8,6 @@ package org.jetbrains.kotlin.fir.resolve.transformers
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirElement
-import org.jetbrains.kotlin.fir.resolve.createErrorReferenceWithExistingCandidate
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.FirSimpleFunctionBuilder
 import org.jetbrains.kotlin.fir.declarations.builder.buildTypeParameter
@@ -21,9 +20,9 @@ import org.jetbrains.kotlin.fir.references.FirReference
 import org.jetbrains.kotlin.fir.references.impl.FirStubReference
 import org.jetbrains.kotlin.fir.resolve.BodyResolveComponents
 import org.jetbrains.kotlin.fir.resolve.calls.*
+import org.jetbrains.kotlin.fir.resolve.createErrorReferenceWithExistingCandidate
 import org.jetbrains.kotlin.fir.resolve.diagnostics.ConeInapplicableCandidateError
 import org.jetbrains.kotlin.fir.resolvedTypeFromPrototype
-import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.fir.symbols.SyntheticCallableId
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
@@ -34,6 +33,7 @@ import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildTypeProjectionWithVariance
 import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 import org.jetbrains.kotlin.resolve.calls.tower.CandidateApplicability
@@ -297,7 +297,8 @@ class FirSyntheticCallGenerator(
 
         val returnType = rightArgumentType.resolvedTypeFromPrototype(
             rightArgumentType.type.withAttributes(
-                ConeAttributes.create(listOf(CompilerConeAttributes.Exact))
+                ConeAttributes.create(listOf(CompilerConeAttributes.Exact)),
+                session.typeContext,
             )
         )
 
