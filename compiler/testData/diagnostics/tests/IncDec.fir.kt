@@ -22,10 +22,10 @@ class WrongIncDec() {
 
 fun testWrongIncDec() {
   var x = WrongIncDec()
-  x++
-  ++x
-  x--
-  --x
+  <!TYPE_MISMATCH!>x++<!>
+  <!TYPE_MISMATCH!>++x<!>
+  <!TYPE_MISMATCH!>x--<!>
+  <!TYPE_MISMATCH!>--x<!>
 }
 
 class UnitIncDec() {
@@ -35,12 +35,12 @@ class UnitIncDec() {
 
 fun testUnitIncDec() {
   var x = UnitIncDec()
-  x++
-  ++x
-  x--
-  --x
-  x = x++
-  x = x--
-  x = ++x
-  x = --x
+  <!TYPE_MISMATCH!>x++<!>
+  <!TYPE_MISMATCH!>++x<!>
+  <!TYPE_MISMATCH!>x--<!>
+  <!TYPE_MISMATCH!>--x<!>
+  x = <!TYPE_MISMATCH!>x++<!>
+  x = <!TYPE_MISMATCH!>x--<!>
+  x = <!TYPE_MISMATCH!>++x<!>
+  x = <!TYPE_MISMATCH!>--x<!>
 }
