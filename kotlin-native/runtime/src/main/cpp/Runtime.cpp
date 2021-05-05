@@ -191,12 +191,15 @@ void AppendToInitializersTail(InitNode *next) {
   initTailNode = next;
 }
 
-RUNTIME_NOTHROW void Kotlin_initRuntimeIfNeeded() {
-  if (!isValidRuntime()) {
-    initRuntime();
-    // Register runtime deinit function at thread cleanup.
-    konan::onThreadExit(Kotlin_deinitRuntimeCallback, runtimeState);
+RUNTIME_NOTHROW bool Kotlin_initRuntimeIfNeeded() {
+  if (isValidRuntime()) {
+      return false;
   }
+
+  initRuntime();
+  // Register runtime deinit function at thread cleanup.
+  konan::onThreadExit(Kotlin_deinitRuntimeCallback, runtimeState);
+  return true;
 }
 
 void Kotlin_deinitRuntimeIfNeeded() {

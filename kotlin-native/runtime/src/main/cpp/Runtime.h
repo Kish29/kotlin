@@ -33,7 +33,7 @@ enum DestroyRuntimeMode {
 
 DestroyRuntimeMode Kotlin_getDestroyRuntimeMode();
 
-RUNTIME_NOTHROW void Kotlin_initRuntimeIfNeeded();
+RUNTIME_NOTHROW bool Kotlin_initRuntimeIfNeeded();
 void Kotlin_deinitRuntimeIfNeeded();
 
 // Can only be called once.

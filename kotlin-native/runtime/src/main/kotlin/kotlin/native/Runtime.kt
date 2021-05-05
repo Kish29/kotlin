@@ -12,7 +12,12 @@ import kotlin.native.internal.UnhandledExceptionHookHolder
  * Initializes Kotlin runtime for the current thread, if not inited already.
  */
 @GCUnsafeCall("Kotlin_initRuntimeIfNeeded")
-external public fun initRuntimeIfNeeded(): Unit
+external private fun initRuntimeIfNeededImpl(): Boolean
+
+public fun initRuntimeIfNeeded(): Unit {
+    // TODO: With the new MM this should probably be a no-op: kotlin code cannot run without a runtime in the new MM.
+    initRuntimeIfNeededImpl()
+}
 
 /**
  * Deinitializes Kotlin runtime for the current thread, if was inited.
