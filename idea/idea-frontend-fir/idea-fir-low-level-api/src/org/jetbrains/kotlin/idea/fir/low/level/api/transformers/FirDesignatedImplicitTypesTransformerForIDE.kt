@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.createReturnTy
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.idea.fir.low.level.api.api.FirDeclarationUntypedDesignationWithFile
 import org.jetbrains.kotlin.idea.fir.low.level.api.element.builder.FirIdeDesignatedBodyResolveTransformerForReturnTypeCalculator
+import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensurePhase
 import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensureTargetPhase
 
 internal class FirDesignatedImplicitTypesTransformerForIDE(
@@ -40,10 +41,10 @@ internal class FirDesignatedImplicitTypesTransformerForIDE(
 ) {
     private val ideDeclarationTransformer = IDEDeclarationTransformer(designation)
 
-    @Suppress("NAME_SHADOWING")
     override fun transformDeclarationContent(declaration: FirDeclaration, data: ResolutionMode): FirDeclaration =
         ideDeclarationTransformer.transformDeclarationContent(this, declaration, data) {
             super.transformDeclarationContent(declaration, data)
+                .updateClassIfContentResolved(FirResolvePhase.IMPLICIT_TYPES_BODY_RESOLVE)
         }
 
     override fun needReplacePhase(firDeclaration: FirDeclaration): Boolean = ideDeclarationTransformer.needReplacePhase

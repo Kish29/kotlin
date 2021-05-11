@@ -28,6 +28,12 @@ internal object FirLazyBodiesCalculator {
         )
     }
 
+    fun calculateLazyBodiesInsideIfNeeded(designation: FirDeclarationUntypedDesignation, phase: FirResolvePhase) {
+        if (phase == FIRST_PHASE_WHICH_NEEDS_BODIES) {
+            calculateLazyBodiesInside(designation)
+        }
+    }
+
     fun calculateLazyBodiesIfPhaseRequires(firFile: FirFile, phase: FirResolvePhase) {
         if (phase == FIRST_PHASE_WHICH_NEEDS_BODIES) {
             firFile.transform<FirElement, MutableList<FirDeclaration>>(FirLazyBodiesCalculatorTransformer, mutableListOf())

@@ -19,8 +19,14 @@ internal fun FirDeclarationUntypedDesignation.ensurePathPhase(firResolvePhase: F
 internal fun FirDeclarationUntypedDesignation.ensureTargetPhase(firResolvePhase: FirResolvePhase) =
     check(declaration.resolvePhase >= firResolvePhase) { "Expected $firResolvePhase but found ${declaration.resolvePhase}" }
 
+internal fun FirDeclarationUntypedDesignation.ensurePhase(firResolvePhase: FirResolvePhase) {
+    toSequence(includeTarget = true).forEach {
+        check(it.resolvePhase >= firResolvePhase) { "Expected $firResolvePhase but found ${it.resolvePhase}" }
+    }
+}
+
 internal fun FirDeclarationUntypedDesignation.ensureTargetPhaseIfClass(firResolvePhase: FirResolvePhase) = when (declaration) {
-    is FirProperty, is FirSimpleFunction -> Unit
+    is FirProperty, is FirSimpleFunction, is FirConstructor -> Unit
     is FirClass<*>, is FirTypeAlias -> ensureTargetPhase(firResolvePhase)
     else -> error("Unexpected target")
 }
