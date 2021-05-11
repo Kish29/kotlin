@@ -6,17 +6,17 @@
 package org.jetbrains.kotlin.idea.fir.low.level.api.transformers
 
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.declarations.FirDeclaration
-import org.jetbrains.kotlin.fir.declarations.FirFile
-import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
-import org.jetbrains.kotlin.fir.declarations.FirTypeAlias
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.resolve.ResolutionMode
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.resolve.transformers.FirProviderInterceptor
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.*
 import org.jetbrains.kotlin.idea.fir.low.level.api.api.FirDeclarationUntypedDesignationWithFile
 import org.jetbrains.kotlin.idea.fir.low.level.api.element.builder.FirIdeDesignatedBodyResolveTransformerForReturnTypeCalculator
+import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensurePathPhase
+import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensurePhase
 import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensureTargetPhase
+import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensureTargetPhaseIfClass
 
 internal class FirDesignatedBodyResolveTransformerForIDE(
     private val designation: FirDeclarationUntypedDesignationWithFile,
@@ -40,10 +40,10 @@ internal class FirDesignatedBodyResolveTransformerForIDE(
 ) {
     private val ideDeclarationTransformer = IDEDeclarationTransformer(designation)
 
-    @Suppress("NAME_SHADOWING")
     override fun transformDeclarationContent(declaration: FirDeclaration, data: ResolutionMode): FirDeclaration =
         ideDeclarationTransformer.transformDeclarationContent(this, declaration, data) {
             super.transformDeclarationContent(declaration, data)
+                .updateClassIfContentResolved(FirResolvePhase.BODY_RESOLVE)
         }
 
     override fun needReplacePhase(firDeclaration: FirDeclaration): Boolean =

@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.resolve.transformers.FirTypeResolveTransformer
 import org.jetbrains.kotlin.idea.fir.low.level.api.api.FirDeclarationUntypedDesignationWithFile
 import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensurePathPhase
+import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensurePhase
 import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensureTargetPhase
 import org.jetbrains.kotlin.idea.fir.low.level.api.util.ensureTargetPhaseIfClass
 
@@ -34,10 +35,10 @@ internal class FirDesignatedTypeResolverTransformerForIDE(
 
     override fun transformDeclaration() {
         if (designation.declaration.resolvePhase >= FirResolvePhase.TYPES) return
-        designation.ensurePathPhase(FirResolvePhase.TYPES)
+        designation.ensurePathPhase(FirResolvePhase.SUPER_TYPES)
         designation.ensureTargetPhaseIfClass(FirResolvePhase.SUPER_TYPES)
         designation.firFile.transform<FirFile, Any?>(this, null)
         ideDeclarationTransformer.ensureDesignationPassed()
-        designation.ensureTargetPhase(FirResolvePhase.TYPES)
+        designation.ensurePhase(FirResolvePhase.TYPES)
     }
 }

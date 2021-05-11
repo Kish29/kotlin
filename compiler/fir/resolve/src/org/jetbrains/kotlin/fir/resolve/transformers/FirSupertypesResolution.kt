@@ -91,7 +91,7 @@ fun <F : FirClassLikeDeclaration<F>> F.runSupertypeResolvePhaseForLocalClass(
     return this.transform<F, Nothing?>(applySupertypesTransformer, null)
 }
 
-class FirApplySupertypesTransformer(
+open class FirApplySupertypesTransformer(
     private val supertypeComputationSession: SupertypeComputationSession
 ) : FirDefaultTransformer<Any?>() {
     override fun <E : FirElement> transformElement(element: E, data: Any?): E {
@@ -183,7 +183,7 @@ fun FirRegularClass.resolveSupertypesInTheAir(session: FirSession): List<FirType
         .resolveSpecificClassLikeSupertypes(this, superTypeRefs)
 }
 
-class FirSupertypeResolverVisitor(
+open class FirSupertypeResolverVisitor(
     private val session: FirSession,
     private val supertypeComputationSession: SupertypeComputationSession,
     private val scopeSession: ScopeSession,

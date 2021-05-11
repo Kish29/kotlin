@@ -67,7 +67,7 @@ abstract class ResolvedStatusCalculator {
     }
 }
 
-class FirStatusResolveTransformer(
+open class FirStatusResolveTransformer(
     session: FirSession,
     scopeSession: ScopeSession,
     statusComputationSession: StatusComputationSession,

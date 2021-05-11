@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.idea.fir.low.level.api.transformers
 
 import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.resolve.transformers.FirAbstractPhaseTransformer
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
@@ -53,6 +54,22 @@ internal class IDEDeclarationTransformer(private val designation: FirDeclaration
         check(designationPassed) { "Designation not passed for declaration ${designation.declaration::class.simpleName}" }
     }
 }
+
+internal class DesignationChecker(private val designation: FirDeclarationUntypedDesignation) {
+    var targetIsVisited = false
+    var isInTargetDeclaration = false
+    inline fun <T : FirDeclaration> whenInDesignation(declaration: T, body: () -> Unit): T {
+        val oldIsInTargetDeclaration = isInTargetDeclaration
+        isInTargetDeclaration = isInTargetDeclaration || declaration == designation.declaration
+        targetIsVisited = targetIsVisited || isInTargetDeclaration
+        if (isInTargetDeclaration || declaration in designation.path) {
+            body()
+        }
+        isInTargetDeclaration = oldIsInTargetDeclaration
+        return declaration
+    }
+}
+
 
 private fun <D> FirElement.visitNoTransform(transformer: FirTransformer<D>, data: D) {
     val result = this.transform<FirElement, D>(transformer, data)
