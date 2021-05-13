@@ -116,7 +116,6 @@ sourceSets["main"].withConvention(org.jetbrains.kotlin.gradle.plugin.KotlinSourc
         kotlin.srcDir("../kotlin-native/shared/src/main/kotlin")
         kotlin.srcDir("../kotlin-native/build-tools/src/main/kotlin")
         kotlin.srcDir("../kotlin-native/tools/kotlin-native-gradle-plugin/src/main/kotlin")
-        kotlin.srcDir("../compiler/util-klib/src")
         kotlin.srcDir("../native/utils/src")
     }
     kotlin.srcDir(project.kotlinNativeVersionSrc())
