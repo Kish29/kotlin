@@ -1401,6 +1401,12 @@ public class IrTextTestGenerated extends AbstractIrTextTest {
         }
 
         @Test
+        @TestMetadata("kt46597.kt")
+        public void testKt46597() throws Exception {
+            runTest("compiler/testData/ir/irText/expressions/kt46597.kt");
+        }
+
+        @Test
         @TestMetadata("lambdaInCAO.kt")
         public void testLambdaInCAO() throws Exception {
             runTest("compiler/testData/ir/irText/expressions/lambdaInCAO.kt");
