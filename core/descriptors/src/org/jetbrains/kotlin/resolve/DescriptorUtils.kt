@@ -27,16 +27,14 @@ import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.isInlineClass
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeProjection
-import org.jetbrains.kotlin.types.TypeSubstitutor
-import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.checker.KotlinTypeRefiner
 import org.jetbrains.kotlin.types.checker.REFINER_CAPABILITY
 import org.jetbrains.kotlin.types.refinement.TypeRefinement
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
+import org.jetbrains.kotlin.types.typeUtil.shouldBeUpdated
 import org.jetbrains.kotlin.utils.DFS
 import org.jetbrains.kotlin.utils.SmartList
 
@@ -426,3 +424,9 @@ fun ModuleDescriptor.isTypeRefinementEnabled(): Boolean = getCapability(REFINER_
 
 val VariableDescriptor.isUnderscoreNamed
     get() = !name.isSpecial && name.identifier == "_"
+
+fun <D : CallableDescriptor> D.shouldBeUsedToSubstitute() =
+    valueParameters.none { it.type.isError }
+            && returnType?.isError != true
+            && dispatchReceiverParameter?.type?.isError != true
+            && extensionReceiverParameter?.type?.isError != true

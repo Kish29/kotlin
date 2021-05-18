@@ -54,7 +54,8 @@ class BuilderInferenceSession(
     private val deprecationResolver: DeprecationResolver,
     private val moduleDescriptor: ModuleDescriptor,
     private val typeApproximator: TypeApproximator,
-    private val missingSupertypesResolver: MissingSupertypesResolver
+    private val missingSupertypesResolver: MissingSupertypesResolver,
+    private val lambdaArgument: LambdaKotlinCallArgument
 ) : ManyCandidatesResolver<CallableDescriptor>(
     psiCallResolver, postponedArgumentsAnalyzer, kotlinConstraintSystemCompleter, callComponents, builtIns
 ) {
@@ -208,20 +209,24 @@ class BuilderInferenceSession(
         return ConstraintStorage.Empty
     }
 
+    fun getNotFixedToInferredTypesSubstitutor(): NewTypeSubstitutor =
+        ComposedSubstitutor(commonSystem.buildCurrentSubstitutor() as NewTypeSubstitutor, createNonFixedTypeToVariableSubstitutor())
+
     override fun inferPostponedVariables(
         lambda: ResolvedLambdaAtom,
         initialStorage: ConstraintStorage,
         completionMode: ConstraintSystemCompletionMode,
         diagnosticsHolder: KotlinDiagnosticsHolder,
     ): Map<TypeConstructor, UnwrappedType>? {
+        this.lambda = lambda
+
         val effectivelyEmptyConstraintSystem = initializeCommonSystem(initialStorage)
         val initialStorageSubstitutor = initialStorage.buildResultingSubstitutor(commonSystem, transformTypeVariablesToErrorTypes = false)
 
-        this.lambda = lambda
-
         if (effectivelyEmptyConstraintSystem) {
             if (isTopLevelBuilderInferenceCall()) {
-                updateAllCalls(initialStorageSubstitutor)
+                val s = ComposedSubstitutor(initialStorageSubstitutor, commonSystem.buildCurrentSubstitutor() as NewTypeSubstitutor)
+                updateAllCalls(s)
             }
             return null
         }
@@ -235,7 +240,8 @@ class BuilderInferenceSession(
         )
 
         if (isTopLevelBuilderInferenceCall()) {
-            updateAllCalls(initialStorageSubstitutor)
+            val s = ComposedSubstitutor(initialStorageSubstitutor, commonSystem.buildCurrentSubstitutor() as NewTypeSubstitutor)
+            updateAllCalls(s)
         }
 
         return commonSystem.fixedTypeVariables.cast() // TODO: SUB
@@ -250,12 +256,14 @@ class BuilderInferenceSession(
     private fun updateAllCalls(substitutor: NewTypeSubstitutor) {
         updateCalls(
             lambda,
-            substitutor = ComposedSubstitutor(substitutor, commonSystem.buildCurrentSubstitutor() as NewTypeSubstitutor),
+            substitutor = substitutor,
             commonSystem.errors
         )
 
         for (nestedSession in nestedBuilderInferenceSessions) {
-            nestedSession.updateAllCalls(substitutor)
+            // TODO: exclude injected variables
+            val s = ComposedSubstitutor(nestedSession.commonSystem.buildCurrentSubstitutor() as NewTypeSubstitutor, substitutor)
+            nestedSession.updateAllCalls(s)
         }
     }
 
@@ -291,7 +299,14 @@ class BuilderInferenceSession(
         }
 
         for (parentSession in findAllParentBuildInferenceSessions()) {
-            parentSession.stubsForPostponedVariables.keys.forEach { commonSystem.registerVariable(it) }
+            for ((variable, stubType) in parentSession.stubsForPostponedVariables) {
+                commonSystem.registerVariable(variable)
+                commonSystem.addSubtypeConstraint(
+                    variable.defaultType,
+                    stubType,
+                    InjectedAnotherStubTypeConstraintPositionImpl(lambdaArgument)
+                )
+            }
         }
 
         /*
@@ -435,7 +450,7 @@ class BuilderInferenceSession(
         return currentSession.topLevelCallContext.trace
     }
 
-    private fun completeDoubleColonExpression(expression: KtDoubleColonExpression, substitutor: NewTypeSubstitutor) {
+    fun completeDoubleColonExpression(expression: KtDoubleColonExpression, substitutor: NewTypeSubstitutor) {
         val atomCompleter = createResolvedAtomCompleter(substitutor, topLevelCallContext)
         val declarationDescriptor = trace.get(BindingContext.DECLARATION_TO_DESCRIPTOR, expression)
 

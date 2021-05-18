@@ -452,6 +452,23 @@ object AbstractTypeChecker {
         return null
     }
 
+    private fun TypeSystemContext.isStubTypesOfDefNotNullStub(a: SimpleTypeMarker, b: SimpleTypeMarker): Boolean {
+        val delegatedA = a.asDefinitelyNotNullType()?.original() ?: a
+        val delegatedB = b.asDefinitelyNotNullType()?.original() ?: b
+        return delegatedA.isStubType() && delegatedB.isStubType()
+    }
+
+    private fun TypeSystemContext.isStubTypeSubtypeOf(a: SimpleTypeMarker, b: SimpleTypeMarker): Boolean {
+        val delegatedA = a.asDefinitelyNotNullType()?.original() ?: a
+        val delegatedB = b.asDefinitelyNotNullType()?.original() ?: b
+
+        if (delegatedA.typeConstructor() !== delegatedB.typeConstructor()) return false
+        if (!a.isDefinitelyNotNullType() && b.isDefinitelyNotNullType()) return false
+        if (a.isMarkedNullable() && !b.isMarkedNullable()) return false
+
+        return true // A!! == B!!, A? == B?, A == B
+    }
+
     private fun checkSubtypeForSpecialCases(
         context: AbstractTypeCheckerContext,
         subType: SimpleTypeMarker,
@@ -469,8 +486,8 @@ object AbstractTypeChecker {
             )
         }
 
-        if (subType.isStubType() && superType.isStubType())
-            return subType.typeConstructor() === superType.typeConstructor()
+        if (isStubTypesOfDefNotNullStub(subType, superType))
+            return isStubTypeSubtypeOf(subType, superType)
 
         if (subType.isStubType() || superType.isStubType() || subType.isStubTypeForVariableInSubtyping() || superType.isStubTypeForVariableInSubtyping())
             return context.isStubTypeEqualsToAnything

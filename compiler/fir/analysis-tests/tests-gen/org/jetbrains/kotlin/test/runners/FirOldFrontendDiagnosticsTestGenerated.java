@@ -12664,12 +12664,6 @@ public class FirOldFrontendDiagnosticsTestGenerated extends AbstractFirDiagnosti
                     public void testViolating() throws Exception {
                         runTest("compiler/testData/diagnostics/tests/inference/builderInference/constraints/violating.kt");
                     }
-
-                    @Test
-                    @TestMetadata("withExpectedType.kt")
-                    public void testWithExpectedType() throws Exception {
-                        runTest("compiler/testData/diagnostics/tests/inference/builderInference/constraints/withExpectedType.kt");
-                    }
                 }
 
                 @Nested

@@ -17,6 +17,8 @@
 package org.jetbrains.kotlin.resolve.calls.smartcasts
 
 import org.jetbrains.kotlin.psi.Call
+import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutor
+import org.jetbrains.kotlin.types.BoundsSubstitutor
 import org.jetbrains.kotlin.types.KotlinType
 
 interface ExplicitSmartCasts {
@@ -25,6 +27,8 @@ interface ExplicitSmartCasts {
     val defaultType: KotlinType?
 
     operator fun plus(smartCast: SingleSmartCast): ExplicitSmartCasts
+
+    fun substituteType(substitutor: NewTypeSubstitutor): ExplicitSmartCasts
 }
 
 data class SingleSmartCast(val call: Call?, val type: KotlinType) : ExplicitSmartCasts {
@@ -35,6 +39,8 @@ data class SingleSmartCast(val call: Call?, val type: KotlinType) : ExplicitSmar
     override fun plus(smartCast: SingleSmartCast) =
         if (this == smartCast) this
         else MultipleSmartCasts(mapOf(call to type, smartCast.call to smartCast.type))
+
+    override fun substituteType(substitutor: NewTypeSubstitutor) = SingleSmartCast(call, substitutor.safeSubstitute(type.unwrap()))
 }
 
 data class MultipleSmartCasts internal constructor(val map: Map<Call?, KotlinType>) : ExplicitSmartCasts {
@@ -43,4 +49,7 @@ data class MultipleSmartCasts internal constructor(val map: Map<Call?, KotlinTyp
     override val defaultType: KotlinType? get() = null
 
     override fun plus(smartCast: SingleSmartCast) = MultipleSmartCasts(map + mapOf(smartCast.call to smartCast.type))
+
+    override fun substituteType(substitutor: NewTypeSubstitutor) =
+        MultipleSmartCasts(map.mapValues { substitutor.safeSubstitute(it.value.unwrap()) })
 }

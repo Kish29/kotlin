@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.resolve.calls.tower
 
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.createFunctionType
+import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.ReceiverParameterDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
@@ -14,10 +15,7 @@ import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.reportDiagnosticOnce
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.MissingSupertypesResolver
-import org.jetbrains.kotlin.resolve.TemporaryBindingTrace
+import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.ArgumentTypeResolver
 import org.jetbrains.kotlin.resolve.calls.NewCommonSuperTypeCalculator
 import org.jetbrains.kotlin.resolve.calls.callUtil.toOldSubstitution
@@ -29,6 +27,7 @@ import org.jetbrains.kotlin.resolve.calls.components.SuspendConversionStrategy
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.context.ContextDependency
+import org.jetbrains.kotlin.resolve.calls.inference.BuilderInferenceSession
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutor
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutorByConstructorMap
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -89,7 +88,25 @@ class ResolvedAtomCompleter(
             is ResolvedLambdaAtom -> completeLambda(resolvedAtom)
             is ResolvedCallAtom -> completeResolvedCall(resolvedAtom, emptyList())
             is ResolvedSubCallArgument -> completeSubCallArgument(resolvedAtom)
+            is ResolvedExpressionAtom -> completeExpression(resolvedAtom)
         }
+    }
+
+    fun ExpressionKotlinCallArgument.isBlockExpression() = psiCallArgument.valueArgument.getArgumentExpression() is KtBlockExpression
+
+    fun completeExpression(resolvedAtom: ResolvedExpressionAtom) {
+        val argumentExpression = resolvedAtom.atom.psiExpression
+
+        if (argumentExpression !is KtBlockExpression) return
+
+        val callableReference = argumentExpression.statements.lastOrNull() as? KtCallableReferenceExpression ?: return
+
+        if (topLevelCallContext.inferenceSession !is BuilderInferenceSession) return
+
+        topLevelCallContext.inferenceSession.completeDoubleColonExpression(
+            callableReference,
+            topLevelCallContext.inferenceSession.getNotFixedToInferredTypesSubstitutor()
+        )
     }
 
     fun completeAll(resolvedAtom: ResolvedAtom) {
@@ -140,6 +157,14 @@ class ResolvedAtomCompleter(
             // PARTIAL_CALL_RESOLUTION_CONTEXT has been written for the baseCall
             is PSIKotlinCallForInvoke -> atom.baseCall.psiCall
             else -> atom.psiKotlinCall.psiCall
+        }
+
+        val e = psiCallForResolutionContext.callElement
+        if (e is KtExpression) {
+            val recordedType = topLevelCallContext.trace.getType(e)
+            if ((recordedType.shouldBeUpdated()) && resolvedCall.resultingDescriptor.returnType != null) {
+                topLevelCallContext.trace.recordType(e, resolvedCall.resultingDescriptor.returnType)
+            }
         }
 
         val resolutionContextForPartialCall =
@@ -415,7 +440,10 @@ class ResolvedAtomCompleter(
 
         val rawExtensionReceiver = callableCandidate.extensionReceiver
 
-        if (rawExtensionReceiver != null && rawExtensionReceiver.receiver.receiverValue.type.contains { it is StubTypeForBuilderInference }) {
+        val unrestrictedBuilderInferenceSupported =
+            topLevelCallContext.languageVersionSettings.supportsFeature(LanguageFeature.UnrestrictedBuilderInference)
+
+        if (rawExtensionReceiver != null && !unrestrictedBuilderInferenceSupported && rawExtensionReceiver.receiver.receiverValue.type.contains { it is StubTypeForBuilderInference }) {
             topLevelTrace.reportDiagnosticOnce(Errors.TYPE_INFERENCE_POSTPONED_VARIABLE_IN_RECEIVER_TYPE.on(callableReferenceExpression))
             return
         }

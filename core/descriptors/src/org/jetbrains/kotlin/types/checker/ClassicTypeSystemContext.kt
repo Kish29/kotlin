@@ -80,12 +80,20 @@ interface ClassicTypeSystemContext : TypeSystemInferenceExtensionContext, TypeSy
 
     override fun SimpleTypeMarker.isStubType(): Boolean {
         require(this is SimpleType, this::errorMessage)
+        if (this is DefinitelyNotNullType && (this.original is StubTypeForBuilderInference || this.original is StubTypeForProvideDelegateReceiver)) {
+            return true
+        }
         return this is StubTypeForBuilderInference || this is StubTypeForProvideDelegateReceiver
     }
 
     override fun SimpleTypeMarker.isStubTypeForVariableInSubtyping(): Boolean {
         require(this is SimpleType, this::errorMessage)
         return this is StubTypeForTypeVariablesInSubtyping
+    }
+
+    override fun SimpleTypeMarker.isStubTypeForBuilderInference(): Boolean {
+        require(this is SimpleType, this::errorMessage)
+        return this is StubTypeForBuilderInference
     }
 
     override fun CapturedTypeMarker.lowerType(): KotlinTypeMarker? {

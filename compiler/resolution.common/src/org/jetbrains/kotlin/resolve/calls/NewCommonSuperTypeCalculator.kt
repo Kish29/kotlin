@@ -171,13 +171,19 @@ object NewCommonSuperTypeCalculator {
             "There should be at least one non-stub type to compute common supertype but there are: $types"
         }
 
-        val stubTypeVariables = types.filter { isStubTypeVariable(it) }
         val nonStubTypeVariables = types.filter { !isStubTypeVariable(it) }
         val areAllNonStubTypesNothing = nonStubTypeVariables.isNotEmpty() && nonStubTypeVariables.all { it.isNothing() }
         if (nonStubTypeVariables.size == 1 && !areAllNonStubTypesNothing) return nonStubTypeVariables.single()
 
         if (nonStubTypeVariables.isEmpty() || areAllNonStubTypesNothing) {
-            return uniquify(stubTypeVariables, contextStubTypesNotEqual).singleOrNull() ?: nullableAnyType()
+            val stubTypeVariables = types.filter { isStubTypeVariable(it) }
+            val uniqueStubTypes = stubTypeVariables.distinctBy { it.asDefinitelyNotNullType()?.original()?.typeConstructor() ?: it.typeConstructor() }
+
+            if (uniqueStubTypes.size > 1) return nullableAnyType()
+
+            if (stubTypeVariables.none { it.isDefinitelyNotNullType() }) {
+                return uniquify(stubTypeVariables, contextStubTypesNotEqual).singleOrNull() ?: return nullableAnyType()
+            }
         }
 
         val uniqueTypes = uniquify(nonTypeVariables, contextStubTypesNotEqual)
@@ -193,7 +199,12 @@ object NewCommonSuperTypeCalculator {
     }
 
     private fun TypeSystemCommonSuperTypesContext.isStubTypeVariable(type: SimpleTypeMarker): Boolean {
-        return type.isStubType() || isStubCapturedTypeVariable(type)
+        return type.isStubType() || isStubCapturedTypeVariable(type) || isDefNotNullStubType(type)
+    }
+
+    private fun TypeSystemCommonSuperTypesContext.isDefNotNullStubType(type: SimpleTypeMarker): Boolean {
+        val projectedType = type.asDefinitelyNotNullType() ?: return false
+        return isStubTypeVariable(projectedType.original())
     }
 
     private fun TypeSystemCommonSuperTypesContext.isStubCapturedTypeVariable(type: SimpleTypeMarker): Boolean {

@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.resolve.calls.results.ResolutionStatus;
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind;
 import org.jetbrains.kotlin.resolve.calls.tasks.ResolutionCandidate;
 import org.jetbrains.kotlin.resolve.calls.tasks.TracingStrategy;
+import org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilsKt;
 import org.jetbrains.kotlin.resolve.scopes.receivers.*;
 import org.jetbrains.kotlin.types.KotlinType;
 import org.jetbrains.kotlin.types.TypeProjection;
@@ -42,6 +43,7 @@ import org.jetbrains.kotlin.types.TypeSubstitutor;
 import org.jetbrains.kotlin.types.Variance;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.jetbrains.kotlin.resolve.calls.results.ResolutionStatus.INCOMPLETE_TYPE_INFERENCE;
 import static org.jetbrains.kotlin.resolve.calls.results.ResolutionStatus.UNKNOWN_STATUS;
@@ -68,7 +70,7 @@ public class ResolvedCallImpl<D extends CallableDescriptor> implements MutableRe
     private final TypeSubstitutor knownTypeParametersSubstitutor;
 
     @NotNull
-    private final Map<TypeParameterDescriptor, KotlinType> typeArguments;
+    private Map<TypeParameterDescriptor, KotlinType> typeArguments;
     @NotNull
     private final Map<ValueParameterDescriptor, ResolvedValueArgument> valueArguments;
     private final MutableDataFlowInfoForArguments dataFlowInfoForArguments;
@@ -196,7 +198,10 @@ public class ResolvedCallImpl<D extends CallableDescriptor> implements MutableRe
     @Override
     @SuppressWarnings("unchecked")
     public void setResultingSubstitutor(@NotNull TypeSubstitutor substitutor) {
-        resultingDescriptor = (D) candidateDescriptor.substitute(substitutor);
+        D descriptorToSubstitute = resultingDescriptor != null && DescriptorUtilsKt.shouldBeUsedToSubstitute(resultingDescriptor)
+                                   ? resultingDescriptor
+                                   : candidateDescriptor;
+        resultingDescriptor = (D) descriptorToSubstitute.substitute(substitutor);
         //noinspection ConstantConditions
         if (resultingDescriptor == null) {
             throw new AssertionError(
@@ -211,6 +216,18 @@ public class ResolvedCallImpl<D extends CallableDescriptor> implements MutableRe
             if (typeArgumentProjection != null) {
                 typeArguments.put(typeParameter, typeArgumentProjection.getType());
             }
+        }
+
+        typeArguments = typeArguments.entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> substitutor.safeSubstitute(e.getValue(), e.getKey().getVariance())));
+
+        if (dispatchReceiver instanceof ExpressionReceiver) {
+            dispatchReceiver = dispatchReceiver.replaceType(substitutor.safeSubstitute(dispatchReceiver.getType(), Variance.IN_VARIANCE));
+        }
+        if (extensionReceiver instanceof ExtensionReceiver) {
+            extensionReceiver =
+                    extensionReceiver.replaceType(substitutor.safeSubstitute(extensionReceiver.getType(), Variance.IN_VARIANCE));
         }
 
         if (candidateDescriptor.getValueParameters().isEmpty()) return;
@@ -238,14 +255,6 @@ public class ResolvedCallImpl<D extends CallableDescriptor> implements MutableRe
             ValueParameterDescriptor substitutedVersion = substitutedParameters.get(valueParameterDescriptor.getIndex());
             assert substitutedVersion != null : valueParameterDescriptor;
             argumentToParameterMap.put(entry.getKey(), argumentMatch.replaceValueParameter(substitutedVersion));
-        }
-
-        if (dispatchReceiver instanceof ExpressionReceiver) {
-            dispatchReceiver = dispatchReceiver.replaceType(substitutor.safeSubstitute(dispatchReceiver.getType(), Variance.IN_VARIANCE));
-        }
-        if (extensionReceiver instanceof ExtensionReceiver) {
-            extensionReceiver =
-                    extensionReceiver.replaceType(substitutor.safeSubstitute(extensionReceiver.getType(), Variance.IN_VARIANCE));
         }
     }
 
