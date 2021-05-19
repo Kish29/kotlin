@@ -155,6 +155,10 @@ task longRunningTest(type: Test, dependsOn: longRunningTestClasses) {
     classpath = sourceSets.longRunningTest.runtimeClasspath
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '6.8.3'
+}
+
 if (project.hasProperty("kotlin.stdlib.test.long.running")) {
     check.dependsOn(longRunningTest)
 }
