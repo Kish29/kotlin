@@ -8,11 +8,19 @@ import kotlin.native.concurrent.InvalidMutabilityException
 import kotlin.native.internal.GCUnsafeCall
 import kotlin.native.internal.UnhandledExceptionHookHolder
 
+@GCUnsafeCall("Kotlin_initRuntimeIfNeeded")
+external private fun initRuntimeIfNeededImpl(): Unit
+
 /**
  * Initializes Kotlin runtime for the current thread, if not inited already.
  */
-@GCUnsafeCall("Kotlin_initRuntimeIfNeeded")
-external public fun initRuntimeIfNeeded(): Unit
+ public fun initRuntimeIfNeeded(): Unit {
+     if (Platform.memoryModel == MemoryModel.EXPERIMENTAL) {
+         return
+     }
+
+     initRuntimeIfNeededImpl()
+ }
 
 /**
  * Deinitializes Kotlin runtime for the current thread, if was inited.

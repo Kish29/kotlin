@@ -140,6 +140,9 @@ RuntimeState* initRuntime() {
   InitOrDeinitGlobalVariables(INIT_THREAD_LOCAL_GLOBALS, result->memoryState);
   RuntimeAssert(result->status == RuntimeStatus::kUninitialized, "Runtime must still be in the uninitialized state");
   result->status = RuntimeStatus::kRunning;
+
+  kotlin::SwitchThreadState(result->memoryState, kotlin::ThreadState::kNative);
+
   return result;
 }
 

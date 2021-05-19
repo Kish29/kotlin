@@ -13,8 +13,9 @@
 #include "InitializationScheme.hpp"
 #include "KAssert.h"
 #include "Natives.h"
-#include "Porting.h"
 #include "ObjectOps.hpp"
+#include "Porting.h"
+#include "Runtime.h"
 #include "StableRefRegistry.hpp"
 #include "ThreadData.hpp"
 #include "ThreadRegistry.hpp"
@@ -502,6 +503,8 @@ extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void Kotlin_mm_switchThreadStateNative(
 }
 
 extern "C" ALWAYS_INLINE RUNTIME_NOTHROW void Kotlin_mm_switchThreadStateRunnable() {
+    // TODO: This is not needed for every native->runnable switch.
+    Kotlin_initRuntimeIfNeeded();
     SwitchThreadState(mm::ThreadRegistry::Instance().CurrentThreadData(), ThreadState::kRunnable);
 }
 

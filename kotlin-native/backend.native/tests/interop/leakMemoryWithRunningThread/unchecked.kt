@@ -1,5 +1,6 @@
 import leakMemory.*
 import kotlin.native.concurrent.*
+import kotlin.native.MemoryModel
 import kotlin.native.Platform
 import kotlin.test.*
 import kotlinx.cinterop.*
@@ -7,7 +8,10 @@ import kotlinx.cinterop.*
 val global = AtomicInt(0)
 
 fun ensureInititalized() {
-    kotlin.native.initRuntimeIfNeeded()
+    if (Platform.memoryModel != MemoryModel.EXPERIMENTAL) {
+        // Only needed with the legacy MM. TODO: Remove when legacy MM is gone.
+        kotlin.native.initRuntimeIfNeeded()
+    }
     // Leak memory
     StableRef.create(Any())
     global.value = 1
