@@ -1,3 +1,5 @@
+// MUTE_FOR_PSI_CLASS_FILES_READING
+
 // FILE: TypeArgumentsFromParameterBounds.java
 import org.jspecify.nullness.*;
 
@@ -31,17 +33,17 @@ fun main(
     a: A, b: B
 ): Unit {
     a.bar(aNotNullNotNullNotNull)
-    // jspecify_nullness_mismatch{mute}
-    a.bar(aNotNullNotNullNull)
-    // jspecify_nullness_mismatch{mute}
-    a.bar(aNotNullNullNotNull)
-    // jspecify_nullness_mismatch{mute}
-    a.bar(aNotNullNullNull)
+    // jspecify_nullness_mismatch
+    a.bar(<!NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS!>aNotNullNotNullNull<!>)
+    // jspecify_nullness_mismatch
+    a.bar(<!NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS!>aNotNullNullNotNull<!>)
+    // jspecify_nullness_mismatch
+    a.bar(<!NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS!>aNotNullNullNull<!>)
 
-    // jspecify_nullness_mismatch{mute}
-    b.bar(aNotNullNotNullNotNull)
-    // jspecify_nullness_mismatch{mute}
-    b.bar(aNotNullNotNullNull)
+    // jspecify_nullness_mismatch
+    b.bar(<!NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS!>aNotNullNotNullNotNull<!>)
+    // jspecify_nullness_mismatch
+    b.bar(<!NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS!>aNotNullNotNullNull<!>)
     b.bar(aNotNullNullNotNull)
     b.bar(aNotNullNullNull)
 }

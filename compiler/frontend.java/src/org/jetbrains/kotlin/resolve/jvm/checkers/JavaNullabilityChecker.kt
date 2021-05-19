@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.UpperBoundChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.AdditionalTypeChecker
+import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.context.CallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
@@ -34,11 +35,9 @@ import org.jetbrains.kotlin.resolve.jvm.diagnostics.ErrorsJvm
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.checker.ClassicTypeCheckerContext
-import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
+import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.expressions.SenselessComparisonChecker
 import org.jetbrains.kotlin.types.model.KotlinTypeMarker
-import org.jetbrains.kotlin.types.typeUtil.contains
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 class JavaNullabilityChecker(val upperBoundChecker: UpperBoundChecker) : AdditionalTypeChecker {
@@ -48,9 +47,7 @@ class JavaNullabilityChecker(val upperBoundChecker: UpperBoundChecker) : Additio
         expressionTypeWithSmartCast: KotlinType,
         c: ResolutionContext<*>
     ) {
-        if (expressionType is AbbreviatedType) {
-            upperBoundChecker.checkBoundsOfExpandedTypeAlias(expressionType.expandedType, expression, c.trace)
-        }
+        checkTypeParameterBounds(expression, expressionType, c)
 
         val dataFlowValue by lazy(LazyThreadSafetyMode.NONE) {
             c.dataFlowValueFactory.createDataFlowValue(expression, expressionType, c)
@@ -119,6 +116,29 @@ class JavaNullabilityChecker(val upperBoundChecker: UpperBoundChecker) : Additio
                         }
                     }
                 }
+        }
+    }
+
+    private fun checkTypeParameterBounds(
+        expression: KtExpression,
+        expressionType: KotlinType,
+        c: ResolutionContext<*>
+    ) {
+        if (expressionType is AbbreviatedType) {
+            upperBoundChecker.checkBoundsOfExpandedTypeAlias(expressionType.expandedType, expression, c.trace)
+        }
+
+        if (c !is BasicCallResolutionContext || upperBoundChecker !is WarningAwareUpperBoundChecker) return
+
+        val resolvedCall = c.trace.bindingContext[BindingContext.RESOLVED_CALL, c.call] ?: return
+
+        for ((typeParameter, typeArgument) in resolvedCall.typeArguments) {
+            // continue if we don't have explicit type arguments
+            val typeReference = c.call.typeArguments.getOrNull(typeParameter.index)?.typeReference ?: continue
+
+            upperBoundChecker.checkBounds(
+                typeReference, typeArgument, typeParameter, TypeSubstitutor.create(typeArgument), c.trace, withOnlyCheckForWarning = true
+            )
         }
     }
 
@@ -211,31 +231,21 @@ class JavaNullabilityChecker(val upperBoundChecker: UpperBoundChecker) : Additio
     ) {
         if (TypeUtils.noExpectedType(expectedType)) return
 
-        val doesExpectedTypeContainsEnhancement = expectedType.contains { it is TypeWithEnhancement }
-        val doesExpressionTypeContainsEnhancement = expressionType.contains { it is TypeWithEnhancement }
+        @Suppress("NAME_SHADOWING")
+        val expressionType = exactedExpressionTypeByDataFlowNullability(expressionType, expressionTypeDataFlowValue, dataFlowInfo)
 
-        if (!doesExpectedTypeContainsEnhancement && !doesExpressionTypeContainsEnhancement) return
-
-        val enhancedExpectedType = if (doesExpectedTypeContainsEnhancement) expectedType.unwrapEnhancementDeeply() else expectedType
-        val enhancedExpressionType = enhanceExpressionTypeByDataFlowNullability(
-            if (doesExpressionTypeContainsEnhancement) expressionType.unwrapEnhancementDeeply() else expressionType,
-            expressionTypeDataFlowValue,
-            dataFlowInfo
-        )
-
-        val isEnhancedExpectedTypeSubtypeOfExpressionType =
-            KotlinTypeChecker.DEFAULT.isSubtypeOf(enhancedExpressionType, enhancedExpectedType)
+        val isEnhancedExpectedTypeSubtypeOfExpressionType = typeCheckerForEnhancedTypes.isSubtypeOf(expressionType, expectedType)
 
         if (isEnhancedExpectedTypeSubtypeOfExpressionType) return
 
-        val isExpectedTypeSubtypeOfExpressionType = KotlinTypeChecker.DEFAULT.isSubtypeOf(expressionType, expectedType)
+        val isExpectedTypeSubtypeOfExpressionType = typeCheckerForBaseTypes.isSubtypeOf(expressionType, expectedType)
 
         if (!isEnhancedExpectedTypeSubtypeOfExpressionType && isExpectedTypeSubtypeOfExpressionType) {
-            reportWarning(enhancedExpectedType, enhancedExpressionType)
+            reportWarning(expectedType.unwrapEnhancementDeeply(), expressionType.unwrapEnhancementDeeply())
         }
     }
 
-    private fun enhanceExpressionTypeByDataFlowNullability(
+    private fun exactedExpressionTypeByDataFlowNullability(
         expressionType: KotlinType,
         expressionTypeDataFlowValue: () -> DataFlowValue,
         dataFlowInfo: DataFlowInfo,
@@ -253,6 +263,17 @@ class JavaNullabilityChecker(val upperBoundChecker: UpperBoundChecker) : Additio
         body()
     } else {
         null
+    }
+
+    companion object {
+        val typeCheckerForEnhancedTypes = NewKotlinTypeCheckerImpl(
+            kotlinTypeRefiner = KotlinTypeRefiner.Default,
+            kotlinTypePreparator = object : KotlinTypePreparator() {
+                override fun prepareType(type: KotlinTypeMarker): UnwrappedType =
+                    super.prepareType(type).let { it.getEnhancementDeeply() ?: it }.unwrap()
+            }
+        )
+        val typeCheckerForBaseTypes = NewKotlinTypeCheckerImpl(KotlinTypeRefiner.Default)
     }
 }
 

@@ -30,16 +30,12 @@ buildscript {
     dependencies {
         bootstrapCompilerClasspath(kotlin("compiler-embeddable", bootstrapKotlinVersion))
 
-        classpath("org.jetbrains.kotlin:kotlin-build-gradle-plugin:0.0.28")
+        classpath("org.jetbrains.kotlin:kotlin-build-gradle-plugin:0.0.29")
         classpath(kotlin("gradle-plugin", bootstrapKotlinVersion))
         classpath(kotlin("serialization", bootstrapKotlinVersion))
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.9.17")
         classpath("org.jfrog.buildinfo:build-info-extractor-gradle:4.17.2")
     }
-}
-
-if (kotlinBuildProperties.buildScanServer != null) {
-    apply(from = "gradle/buildScanUserData.gradle")
 }
 
 plugins {
@@ -525,12 +521,16 @@ allprojects {
         outputs.doNotCacheIf("https://youtrack.jetbrains.com/issue/KTI-112") { true }
     }
 
-    normalization {
-        runtimeClasspath {
-            ignore("META-INF/MANIFEST.MF")
-            ignore("META-INF/compiler.version")
-            ignore("META-INF/plugin.xml")
-            ignore("kotlin/KotlinVersionCurrentValue.class")
+    if (isConfigurationCacheDisabled) {
+        // Custom input normolization isn't supported by configuration cache at the moment
+        // See https://github.com/gradle/gradle/issues/13706
+        normalization {
+            runtimeClasspath {
+                ignore("META-INF/MANIFEST.MF")
+                ignore("META-INF/compiler.version")
+                ignore("META-INF/plugin.xml")
+                ignore("kotlin/KotlinVersionCurrentValue.class")
+            }
         }
     }
 

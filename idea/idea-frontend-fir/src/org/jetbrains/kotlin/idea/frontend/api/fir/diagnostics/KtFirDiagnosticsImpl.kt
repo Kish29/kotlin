@@ -1196,7 +1196,7 @@ internal class TypeParametersInEnumImpl(
 }
 
 internal class ConflictingProjectionImpl(
-    override val type: String,
+    override val type: KtType,
     firDiagnostic: FirPsiDiagnostic<*>,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.ConflictingProjection(), KtAbstractFirDiagnostic<PsiElement> {
@@ -1343,8 +1343,8 @@ internal class TypeParameterOfPropertyNotUsedInReceiverImpl(
 }
 
 internal class ReturnTypeMismatchImpl(
-    override val expected: KtType,
-    override val actual: KtType,
+    override val expectedType: KtType,
+    override val actualType: KtType,
     firDiagnostic: FirPsiDiagnostic<*>,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.ReturnTypeMismatch(), KtAbstractFirDiagnostic<KtExpression> {
@@ -1648,7 +1648,7 @@ internal class LocalInterfaceNotAllowedImpl(
 
 internal class AbstractFunctionInNonAbstractClassImpl(
     override val function: KtSymbol,
-    override val containingClass: KtSymbol,
+    override val containingClass: KtClassLikeSymbol,
     firDiagnostic: FirPsiDiagnostic<*>,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.AbstractFunctionInNonAbstractClass(), KtAbstractFirDiagnostic<KtFunction> {
@@ -1788,7 +1788,7 @@ internal class FunInterfaceWithSuspendFunctionImpl(
 
 internal class AbstractPropertyInNonAbstractClassImpl(
     override val property: KtSymbol,
-    override val containingClass: KtSymbol,
+    override val containingClass: KtClassLikeSymbol,
     firDiagnostic: FirPsiDiagnostic<*>,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.AbstractPropertyInNonAbstractClass(), KtAbstractFirDiagnostic<KtModifierListOwner> {
@@ -1981,8 +1981,8 @@ internal class WrongSetterParameterTypeImpl(
 }
 
 internal class InitializerTypeMismatchImpl(
-    override val expected: KtType,
-    override val actual: KtType,
+    override val expectedType: KtType,
+    override val actualType: KtType,
     firDiagnostic: FirPsiDiagnostic<*>,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.InitializerTypeMismatch(), KtAbstractFirDiagnostic<KtProperty> {
@@ -2430,8 +2430,8 @@ internal class DelegateSpecialFunctionNoneApplicableImpl(
 
 internal class DelegateSpecialFunctionReturnTypeMismatchImpl(
     override val delegateFunction: String,
-    override val expected: KtType,
-    override val actual: KtType,
+    override val expectedType: KtType,
+    override val actualType: KtType,
     firDiagnostic: FirPsiDiagnostic<*>,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.DelegateSpecialFunctionReturnTypeMismatch(), KtAbstractFirDiagnostic<KtExpression> {

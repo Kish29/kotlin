@@ -81,3 +81,9 @@ fun Task.singleOutputFile(): File = when (this) {
     is ProGuardTask -> project.file(outJarFiles.single()!!)
     else -> outputs.files.singleFile
 }
+
+val Project.isConfigurationCacheDisabled
+    get() = (gradle.startParameter as? org.gradle.api.internal.StartParameterInternal)?.isConfigurationCache != true
+
+val Project.isIdeaActive
+    get() = providers.systemProperty("idea.active").forUseAtConfigurationTime().isPresent
